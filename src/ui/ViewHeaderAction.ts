@@ -68,6 +68,9 @@ export class ViewHeaderAction {
       }
       const button = view.addAction(ICON_ID, "Read aloud", () => this.toggle());
       button.addClass("voice-header-action");
+      // Paint straight away so the resting state is our own waveform rather
+      // than the registered icon, which renders at a different weight.
+      this.paint(button, "idle");
       this.buttons.set(button, "idle");
     }
     this.pruneDetached();
@@ -135,18 +138,23 @@ export class ViewHeaderAction {
         button.setAttribute("aria-label", "Cancel");
         break;
       case "playing":
-        this.paintWave(button);
+        this.paintWave(button, false);
         button.setAttribute("aria-label", "Pause");
         break;
       default:
-        setIcon(button, ICON_ID);
+        this.paintWave(button, true);
         button.setAttribute("aria-label", "Read aloud");
     }
   }
 
-  /** Animated bars, styled and animated entirely in styles.css. */
-  private paintWave(button: HTMLElement): void {
-    const wave = button.createDiv({ cls: "voice-wave" });
+  /**
+   * The same bars in both states — still when idle, moving while speaking — so
+   * the control keeps exactly one size and shape. Styling lives in styles.css.
+   */
+  private paintWave(button: HTMLElement, still: boolean): void {
+    const wave = button.createDiv({
+      cls: still ? "voice-wave is-static" : "voice-wave",
+    });
     for (let i = 0; i < 5; i++) {
       wave.createSpan({ cls: "voice-wave-bar" });
     }

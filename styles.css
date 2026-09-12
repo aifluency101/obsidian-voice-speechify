@@ -1162,8 +1162,10 @@
   border-radius: 2px;
 }
 
-/* Read-aloud control in the note header. While speaking it becomes an animated
-   waveform — an activity indicator, since no provider exposes real amplitude. */
+/* Read-aloud control in the note header. The same bars are used whether it is
+   resting or speaking, so the control never changes size — only whether the
+   bars move. Everything is driven by transform from one shared box, so the two
+   states cannot drift apart in height the way an icon plus bars would. */
 .voice-header-action .voice-wave {
   display: flex;
   align-items: center;
@@ -1176,9 +1178,7 @@
 .voice-header-action .voice-wave-bar {
   display: block;
   width: 1.5px;
-  /* Sit well inside the icon box — at full height the bars read as a much
-     heavier glyph than the icons either side of it. */
-  height: 60%;
+  height: 100%;
   border-radius: 1px;
   background-color: currentColor;
   transform-origin: center;
@@ -1201,13 +1201,34 @@
   animation-delay: 0.6s;
 }
 
+/* Resting: the same bars held at a fixed waveform profile, peaking at the same
+   0.75 the animation reaches, so neither state looks heavier than the other. */
+.voice-header-action .voice-wave.is-static .voice-wave-bar {
+  animation: none;
+}
+.voice-header-action .voice-wave.is-static .voice-wave-bar:nth-child(1) {
+  transform: scaleY(0.3);
+}
+.voice-header-action .voice-wave.is-static .voice-wave-bar:nth-child(2) {
+  transform: scaleY(0.55);
+}
+.voice-header-action .voice-wave.is-static .voice-wave-bar:nth-child(3) {
+  transform: scaleY(0.75);
+}
+.voice-header-action .voice-wave.is-static .voice-wave-bar:nth-child(4) {
+  transform: scaleY(0.5);
+}
+.voice-header-action .voice-wave.is-static .voice-wave-bar:nth-child(5) {
+  transform: scaleY(0.3);
+}
+
 @keyframes voice-wave-pulse {
   0%,
   100% {
-    transform: scaleY(0.3);
+    transform: scaleY(0.25);
   }
   50% {
-    transform: scaleY(1);
+    transform: scaleY(0.75);
   }
 }
 
@@ -1216,7 +1237,7 @@
 @media (prefers-reduced-motion: reduce) {
   .voice-header-action .voice-wave-bar {
     animation: none;
-    transform: scaleY(0.6);
+    transform: scaleY(0.55);
   }
 }
 
