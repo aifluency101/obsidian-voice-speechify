@@ -6,7 +6,7 @@
 
 ![Obsidian Voice — listen to your notes in natural, lifelike speech with AWS Polly, ElevenLabs, Google Cloud, Azure Speech, OpenAI, or MiniMax](./assets/hero.png)
 
-Turn every note into a mobile-friendly, audiobook-like experience. The Obsidian Voice Plugin reads your notes aloud in natural, lifelike speech — using the text-to-speech provider you already have. It supports all the major engines — **AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, and **Speechify** — so you can listen with whichever one you prefer. Listen with a dedicated player, jump between notes like chapters, change the speed on the fly, and save audio offline — with your credentials kept private in your own account.
+Turn every note into a mobile-friendly, audiobook-like experience. The Obsidian Voice Plugin reads your notes aloud in natural, lifelike speech — using the text-to-speech provider you already have. It supports all the major engines — **AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, and **Speechify** — plus your device's own built-in voices, which need no account at all — so you can listen with whichever one you prefer. Listen with a dedicated player, jump between notes like chapters, change the speed on the fly, and save audio offline — with your credentials kept private in your own account.
 
 <p align="center">
   <a href="https://www.buymeacoffee.com/chrisurf" target="_blank">
@@ -30,7 +30,7 @@ Turn every note into a mobile-friendly, audiobook-like experience. The Obsidian 
 ## Highlights
 
 - **A real audiobook player** — open the Voice player, see your notes as chapters, and play, skip, and repeat just like a podcast app.
-- **Bring your own provider** — Voice supports all the major text-to-speech engines (**AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, and **Speechify**), so you can listen with whichever one you already use. Every feature works the same on all of them.
+- **Bring your own provider** — Voice supports all the major text-to-speech engines (**AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, and **Speechify**), or fall back to your device's built-in voices with no account at all. Every feature works the same on all of them.
 - **Listen in seconds** — turn any note into lifelike speech straight from the ribbon, a command, or the player.
 - **Designed for every device** — the same experience on desktop, iOS, and Android, with a touch-friendly mobile player and control bar.
 - **Own your audio** — download MP3 files, auto-embed them into your note, and keep an offline archive.
@@ -177,7 +177,7 @@ Configure your provider and credentials in **Settings → Voice**. The settings 
 
 | Setting                         | What it does                                                                                                                                                                                                                                                                              |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Speech Provider**             | Choose the engine: **AWS Polly**, **ElevenLabs**, **Google Cloud**, **Azure Speech**, **OpenAI**, **MiniMax**, or **Speechify**. The credential fields below adapt to your choice.                                                                                                        |
+| **Speech Provider**             | Choose the engine: **AWS Polly**, **ElevenLabs**, **Google Cloud**, **Azure Speech**, **OpenAI**, **MiniMax**, **Speechify**, or **On-device**. The credential fields below adapt to your choice.                                                                                         |
 | **Rewind interval**             | How many seconds the rewind control jumps back (1–60s, default 3s).                                                                                                                                                                                                                       |
 | **Fast-forward interval**       | How many seconds the fast-forward control jumps ahead (1–60s, default 3s).                                                                                                                                                                                                                |
 | **Save automatically**          | Automatically save and embed the MP3 after each playback. Off by default.                                                                                                                                                                                                                 |
@@ -211,7 +211,7 @@ Voice ships **16 commands** you can bind to any hotkey. No keys are assigned by 
 
 ## Bring Your Own Provider
 
-Voice is built to work with the provider you already use. For a long time it was AWS Polly only — the goal now is to support all the common text-to-speech engines, so you can bring your own. Pick **AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, or **Speechify** from the **Speech Provider** dropdown in settings. Each provider keeps its own credentials and voice list; everything else — tempo, rewind/fast-forward intervals, downloads, auto-save, and the content toggles — works identically. After entering your credentials, press **Test Credentials** to confirm everything is connected.
+Voice is built to work with the provider you already use. For a long time it was AWS Polly only — the goal now is to support all the common text-to-speech engines, so you can bring your own. Pick **AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, **Speechify**, or **On-device** from the **Speech Provider** dropdown in settings. Each provider keeps its own credentials and voice list; everything else — tempo, rewind/fast-forward intervals, downloads, auto-save, and the content toggles — works identically. After entering your credentials, press **Test Credentials** to confirm everything is connected.
 
 The newest addition, **Speechify**, streams audio with a very low time to first word, and its voice picker lists the voices on your account — cloned voices included — once you press **Test Credentials**.
 
@@ -247,6 +247,10 @@ Start with the provider you already have — you can switch anytime.
 **MiniMax** — Sign in at [platform.minimax.io](https://platform.minimax.io/) (or [platform.minimaxi.com](https://platform.minimaxi.com/) for mainland China) and copy your **API key** and **Group ID**. In **Settings → Voice**, choose **MiniMax**, select the matching **region**, pick a model and voice, paste the key and Group ID, and press **Test Credentials**.
 
 **Speechify** — Create an API key at [platform.speechify.ai/api-keys](https://platform.speechify.ai/api-keys). In **Settings → Voice**, choose **Speechify**, pick a model (Simba 3.2 is English-only and fastest; Simba 3.0 is multilingual), paste the key, and press **Test Credentials** — that also loads your account's voices into the picker. Switching model clears the voice list, so test again after changing it.
+
+**On-device** — Nothing to connect. Choose **On-device (no account)** in **Settings → Voice** and pick a voice in the player. It speaks through your operating system's own engine, free and offline. On iOS add or upgrade voices under **Settings → Accessibility → Spoken Content → Voices** — the Enhanced and Premium downloads sound considerably better than the defaults. Siri's voices are not available to apps.
+
+This provider plays audio but never produces an audio file, so **saving MP3s, the chapter list and the scrubber do not work with it**, and playback stops when the device sleeps or Obsidian goes to the background. Rewind and fast-forward move by a chunk of text instead of by seconds. That is a limitation of the browser speech API, not of the plugin — use a cloud provider when you want a saved recording.
 
 ## Troubleshooting & Help
 

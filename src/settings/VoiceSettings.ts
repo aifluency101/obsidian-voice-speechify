@@ -8,7 +8,8 @@ export type TtsProvider =
   | "azure"
   | "openai"
   | "minimax"
-  | "speechify";
+  | "speechify"
+  | "system";
 
 /**
  * Where saved MP3s are written.
@@ -68,6 +69,11 @@ export interface VoiceSettings {
   SPEECHIFY_API_KEY: string;
   SPEECHIFY_VOICE: string;
   SPEECHIFY_MODEL: string;
+
+  // On-device speech (Web Speech API). The voice list comes from the operating
+  // system at runtime, so there is nothing to configure but which voice to use.
+  // Empty means "let the system pick".
+  SYSTEM_VOICE: string;
   // Speechify: the account's voice catalog fetched from /v1/voices on "Test
   // Credentials", filtered to the selected model and cached so the picker can
   // offer every voice (including cloned ones) grouped by language. Cleared
@@ -504,6 +510,8 @@ export const DEFAULT_SETTINGS: VoiceSettings = {
   SPEECHIFY_API_KEY: "",
   SPEECHIFY_VOICE: "geffen_32",
   SPEECHIFY_MODEL: "simba-3.2",
+
+  SYSTEM_VOICE: "",
 
   spellOutAcronyms: false,
   readCodeBlocks: false,

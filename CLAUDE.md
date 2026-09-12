@@ -9,8 +9,9 @@ workflow all live here. Keep it up to date as the codebase evolves.
 ## 1. What this is
 
 **Obsidian Voice** — a text-to-speech plugin for Obsidian that reads notes
-aloud with an audiobook-style player. It supports **seven providers** (AWS Polly,
-ElevenLabs, OpenAI, Google Cloud, Azure Speech, MiniMax, Speechify) and runs on **desktop and
+aloud with an audiobook-style player. It supports **eight providers** (AWS Polly,
+ElevenLabs, OpenAI, Google Cloud, Azure Speech, MiniMax, Speechify, and the device's
+own Web Speech engine) and runs on **desktop and
 mobile** (iOS / Android). Users bring their own provider credentials; nothing is
 proxied through a third party.
 
@@ -65,7 +66,12 @@ All providers implement one interface so the rest of the plugin is
   `updateCredentials()`, `getVoiceOptions()`, and `inputFormat`.
 - Concrete services: `AwsPollyService`, `AzureSpeechService`, `GoogleTtsService`,
   `ElevenLabsService`, `OpenAiSpeechService`, `MiniMaxSpeechService`,
-  `SpeechifySpeechService`.
+  `SpeechifySpeechService`, `SystemVoiceService`.
+- `SystemVoiceService` is the one provider that does **not** synthesize audio data.
+  It drives `speechSynthesis` directly, overriding the playback members instead of
+  calling `playBlob`, and returns `null` from `getLastGeneratedAudio()` so the save
+  and chapter UI disables itself. Skip controls move by a chunk of text, since
+  there is no timeline to seek.
 - `SpeechProviderFactory.ts` — `createSpeechProvider(settings)` builds the
   provider chosen in settings and applies rewind/forward prefs.
 - `textChunker.ts` — splits long text for the text-input providers.
@@ -81,7 +87,7 @@ All providers implement one interface so the rest of the plugin is
 `inputFormat` selects which content pipeline feeds the provider:
 
 - **`"ssml"`** → AWS Polly, Azure Speech, Google Cloud.
-- **`"text"`** → ElevenLabs, OpenAI, MiniMax, Speechify.
+- **`"text"`** → ElevenLabs, OpenAI, MiniMax, Speechify, on-device.
 
 ### Content pipeline (`src/processors/`)
 
@@ -166,7 +172,7 @@ tests/                          # Jest unit + integration tests, mocks, helpers
 
 - **Stay provider-agnostic.** New shared behaviour goes in `BaseSpeechService`
   or the orchestration layer — never special-case one engine in the UI. Any
-  change should be considered against **all seven providers** and **both
+  change should be considered against **all eight providers** and **both
   platforms** (desktop + mobile).
 - **Pure logic in small helpers, Obsidian glue thin.** Put testable logic in
   helpers like `utils/audioFolders.ts` / `utils/chapters.ts` and unit-test it;

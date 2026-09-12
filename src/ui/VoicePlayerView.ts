@@ -37,6 +37,7 @@ const PROVIDERS: { id: TtsProvider; label: string }[] = [
   { id: "openai", label: "OpenAI" },
   { id: "minimax", label: "MiniMax" },
   { id: "speechify", label: "Speechify" },
+  { id: "system", label: "On-device (no account)" },
 ];
 
 /**

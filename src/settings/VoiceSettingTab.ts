@@ -107,6 +107,7 @@ export class VoiceSettingTab extends PluginSettingTab {
             openai: "OpenAI",
             minimax: "MiniMax",
             speechify: "Speechify",
+            system: "On-device (no account)",
           },
         },
       },
@@ -280,6 +281,8 @@ export class VoiceSettingTab extends PluginSettingTab {
       this.displayMiniMaxSettings(containerEl);
     } else if (this.plugin.settings.TTS_PROVIDER === "speechify") {
       this.displaySpeechifySettings(containerEl);
+    } else if (this.plugin.settings.TTS_PROVIDER === "system") {
+      this.displaySystemVoiceSettings(containerEl);
     } else {
       this.displayPollySettings(containerEl);
     }
@@ -304,6 +307,7 @@ export class VoiceSettingTab extends PluginSettingTab {
           .addOption("openai", "OpenAI")
           .addOption("minimax", "MiniMax")
           .addOption("speechify", "Speechify")
+          .addOption("system", "On-device (no account)")
           .setValue(this.plugin.settings.TTS_PROVIDER)
           .onChange(async (value) => {
             this.plugin.settings.TTS_PROVIDER = value as TtsProvider;
@@ -413,6 +417,42 @@ export class VoiceSettingTab extends PluginSettingTab {
 
     // Provider-specific credentials
     this.renderActiveProviderSettings(containerEl);
+  }
+
+  private displaySystemVoiceSettings(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName("On-device voices").setHeading();
+
+    const countSetting = new Setting(containerEl)
+      .setName("Available voices")
+      .setDesc("Reading the voices installed on this device.");
+
+    const refreshCount = () => {
+      // The operating system loads its voice list asynchronously, so an empty
+      // list right after launch usually just means "not ready yet".
+      const count = createSpeechProvider(this.plugin.settings).getVoiceOptions()
+        .length;
+      countSetting.setDesc(
+        count > 0
+          ? `${count} voices found on this device. Pick one from the voice dropdown in the player.`
+          : "No voices found yet. Reopen these settings in a moment, or add voices on your device first.",
+      );
+    };
+    refreshCount();
+    countSetting.addExtraButton((button) => {
+      button.setIcon("refresh-cw").setTooltip("Refresh").onClick(refreshCount);
+    });
+
+    new Setting(containerEl)
+      .setName("Adding more voices")
+      .setDesc(
+        "On iOS and iPadOS: Settings → Accessibility → Spoken Content → Voices. The Enhanced and Premium downloads sound considerably better than the default ones. Siri's own voices are not available to apps.",
+      );
+
+    new Setting(containerEl)
+      .setName("What this provider cannot do")
+      .setDesc(
+        "On-device speech plays audio but never produces an audio file, so saving MP3s, the chapter list and the scrubber are unavailable here. Playback also stops when the device sleeps or Obsidian is sent to the background. Rewind and fast-forward move by a chunk of text instead of by seconds.",
+      );
   }
 
   private displaySpeechifySettings(containerEl: HTMLElement): void {

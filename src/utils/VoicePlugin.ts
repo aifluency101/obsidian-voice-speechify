@@ -237,6 +237,8 @@ export class Voice extends Plugin {
       this.settings.MINIMAX_VOICE = voiceId;
     } else if (this.settings.TTS_PROVIDER === "speechify") {
       this.settings.SPEECHIFY_VOICE = voiceId;
+    } else if (this.settings.TTS_PROVIDER === "system") {
+      this.settings.SYSTEM_VOICE = voiceId;
     } else {
       this.settings.VOICE = voiceId;
     }

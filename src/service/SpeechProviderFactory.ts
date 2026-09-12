@@ -11,6 +11,7 @@ import { AzureSpeechService } from "./AzureSpeechService";
 import { OpenAiSpeechService } from "./OpenAiSpeechService";
 import { MiniMaxSpeechService } from "./MiniMaxSpeechService";
 import { SpeechifySpeechService } from "./SpeechifySpeechService";
+import { SystemVoiceService } from "./SystemVoiceService";
 
 /**
  * Create the speech provider selected in settings.
@@ -44,6 +45,11 @@ export function createSpeechProvider(settings: VoiceSettings): SpeechProvider {
       settings.OPENAI_API_KEY,
       settings.OPENAI_VOICE,
       settings.OPENAI_MODEL,
+      Number(settings.SPEED),
+    );
+  } else if (settings.TTS_PROVIDER === "system") {
+    provider = new SystemVoiceService(
+      settings.SYSTEM_VOICE,
       Number(settings.SPEED),
     );
   } else if (settings.TTS_PROVIDER === "speechify") {
