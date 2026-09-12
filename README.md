@@ -250,7 +250,7 @@ Start with the provider you already have — you can switch anytime.
 
 **On-device** — Nothing to connect. Choose **On-device (no account)** in **Settings → Voice** and pick a voice in the player. It speaks through your operating system's own engine, free and offline. On iOS add or upgrade voices under **Settings → Accessibility → Spoken Content → Voices** — the Enhanced and Premium downloads sound considerably better than the defaults. Siri's voices are not available to apps.
 
-This provider plays audio but never produces an audio file, so **saving MP3s, the chapter list and the scrubber do not work with it**, and playback stops when the device sleeps or Obsidian goes to the background. Rewind and fast-forward move by a chunk of text instead of by seconds. That is a limitation of the browser speech API, not of the plugin — use a cloud provider when you want a saved recording.
+This provider plays audio but never produces an audio file, so **saving MP3s and the chapter list do not work with it**, and playback stops when the device sleeps or Obsidian goes to the background. The scrubber runs on an estimated timeline rather than real audio, so the position is approximate and dragging it jumps to the nearest chunk of text — as do rewind and fast-forward. That is a limitation of the browser speech API, not of the plugin; use a cloud provider when you want a saved recording or exact seeking.
 
 ## Troubleshooting & Help
 

@@ -25,6 +25,7 @@ export class Voice extends Plugin {
     this.markdownHelper = new MarkdownHelper(this.app);
 
     this.speechProvider = createSpeechProvider(this.settings);
+    this.watchProviderVoices();
 
     this.iconEventHandler = new IconEventHandler(
       this,
@@ -189,8 +190,20 @@ export class Voice extends Plugin {
     // Stop any audio on the outgoing provider before swapping
     this.speechProvider.stopAudio();
     this.speechProvider = createSpeechProvider(this.settings);
+    this.watchProviderVoices();
     this.iconEventHandler.setProvider(this.speechProvider);
     this.reinitializeTextSpeaker();
+  }
+
+  /**
+   * Redraw the voice picker when a provider publishes its voice list late. The
+   * on-device engine does this: getVoices() is empty until the OS has loaded
+   * them, and without the refresh the dropdown stays blank for the session.
+   */
+  private watchProviderVoices(): void {
+    this.speechProvider.onVoicesChanged?.(() => {
+      this.refreshVoicePlayerControls();
+    });
   }
 
   /**

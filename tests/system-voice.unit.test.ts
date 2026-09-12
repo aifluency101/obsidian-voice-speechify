@@ -52,11 +52,22 @@ class FakeSynth implements SpeechSynthesisLike {
   resume(): void {
     this.paused = false;
   }
+  private listeners: (() => void)[] = [];
+  addEventListener(_type: "voiceschanged", listener: () => void): void {
+    this.listeners.push(listener);
+  }
+  emitVoicesChanged(): void {
+    this.listeners.forEach((listener) => listener());
+  }
   /** finish the utterance that is currently speaking */
   finishCurrent(): void {
     this.speaking = false;
     this.spoken[this.spoken.length - 1]?.onend?.();
   }
+}
+
+function lastSpoken(synth: FakeSynth): string {
+  return synth.spoken[synth.spoken.length - 1]?.text ?? "";
 }
 
 const utteranceFactory = (text: string) =>
@@ -160,14 +171,79 @@ describe("Unit Tests - System voice provider", () => {
     );
 
     service.fastForwardAudio();
-    expect(synth.spoken[synth.spoken.length - 1].text.startsWith("b")).toBe(
-      true,
-    );
+    expect(lastSpoken(synth).startsWith("b")).toBe(true);
 
+    // just started chunk b, so rewind steps back rather than restarting it
     service.rewindAudio();
-    expect(synth.spoken[synth.spoken.length - 1].text.startsWith("a")).toBe(
-      true,
+    expect(lastSpoken(synth).startsWith("a")).toBe(true);
+  });
+
+  test("exposes an estimated timeline on the audio element", async () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    const audio = service.getAudio();
+
+    expect(audio.duration).toBeNaN();
+    expect(audio.ended).toBe(false);
+
+    // three 380-char chunks at ~16 chars/sec is roughly 71 seconds
+    await service.speak(
+      `${"a".repeat(380)}\n\n${"b".repeat(380)}\n\n${"c".repeat(380)}`,
     );
+    expect(audio.duration).toBeCloseTo((380 * 3) / 16, 1);
+    expect(audio.currentTime).toBeGreaterThanOrEqual(0);
+    expect(audio.currentTime).toBeLessThan(1);
+  });
+
+  test("seeking the timeline jumps to the chunk covering that moment", async () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    await service.speak(
+      `${"a".repeat(380)}\n\n${"b".repeat(380)}\n\n${"c".repeat(380)}`,
+    );
+    const audio = service.getAudio();
+    const chunk = 380 / 16; // ~23.75s per chunk
+
+    audio.currentTime = chunk * 2 + 1;
+    expect(lastSpoken(synth).startsWith("c")).toBe(true);
+    expect(audio.currentTime).toBeCloseTo(chunk * 2, 0);
+
+    audio.currentTime = 1;
+    expect(lastSpoken(synth).startsWith("a")).toBe(true);
+
+    // past the end clamps to the final chunk rather than throwing
+    audio.currentTime = 10_000;
+    expect(lastSpoken(synth).startsWith("c")).toBe(true);
+  });
+
+  test("reports ended through the audio element once the queue finishes", async () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    const audio = service.getAudio();
+    await service.speak("All done.");
+
+    expect(audio.ended).toBe(false);
+    synth.finishCurrent();
+    expect(audio.ended).toBe(true);
+    expect(audio.currentTime).toBeCloseTo(audio.duration, 5);
+  });
+
+  test("offers a system default until the engine publishes its voices", () => {
+    const service = makeService(new FakeSynth());
+    expect(service.getVoiceOptions()).toEqual([
+      { id: "", label: "System default", lang: "en-US" },
+    ]);
+  });
+
+  test("notifies when the engine publishes its voices later", () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    const onChange = jest.fn();
+    service.onVoicesChanged(onChange);
+
+    synth.emitVoicesChanged();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   test("a stale utterance ending does not advance after a restart", async () => {

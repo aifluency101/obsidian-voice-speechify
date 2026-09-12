@@ -100,6 +100,13 @@ export interface SpeechProvider {
   clearCachedAudio(): void;
   setCachedAudio(audioBlob: Blob, filePath: string): void;
 
+  /**
+   * Optional: providers whose voice list arrives asynchronously (the on-device
+   * engine publishes its voices after launch) register here so the plugin can
+   * refresh the voice picker once it does.
+   */
+  onVoicesChanged?(callback: () => void): void;
+
   // Credentials
   validateCredentials(): Promise<CredentialValidationResult>;
   updateCredentials(settings: VoiceSettings): void;
