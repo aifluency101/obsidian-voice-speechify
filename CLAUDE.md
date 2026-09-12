@@ -123,7 +123,8 @@ orchestrators pick the path by `inputFormat`:
   move / rename / delete).
 - `ReadingHighlight.ts` — follow-along highlighting. A CodeMirror `StateField`
   marks the passage being spoken and the word inside it; `ReadingHighlighter`
-  resolves those positions and dispatches into whichever editor shows the note.
+  resolves those positions, dispatches into whichever editor shows the note, and
+  scrolls to follow — the passage centred, the word only when it leaves view.
   Only providers implementing the optional `onSpeechPosition()` drive it — an
   engine that returns finished audio cannot say where it is.
 - `FolderPickerModal.ts` — quick folder picker (fuzzy search, a per-folder

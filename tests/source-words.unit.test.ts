@@ -3,6 +3,7 @@ import {
   normalizeWord,
   tokenizeSource,
   tokenizeSpoken,
+  wordAt,
 } from "../src/utils/sourceWords";
 
 describe("Unit Tests - Source word alignment", () => {
@@ -71,6 +72,19 @@ describe("Unit Tests - Source word alignment", () => {
     matcher.rewindTo(0);
     const range = matcher.find(tokenizeSpoken("one two"))!;
     expect(source.slice(range.from, range.to)).toBe("one two");
+  });
+
+  test("reads the word at a boundary offset", () => {
+    const spoken = "Opinionated defaults instead of starting";
+    expect(wordAt(spoken, 0)).toBe("Opinionated");
+    expect(wordAt(spoken, 12)).toBe("defaults");
+    // hyphens and apostrophes belong to the word
+    expect(wordAt("a keyboard-first workflow", 2)).toBe("keyboard-first");
+    expect(wordAt("it doesn't matter", 3)).toBe("doesn't");
+    // out of range, or landing on whitespace, yields nothing to highlight
+    expect(wordAt(spoken, -1)).toBe("");
+    expect(wordAt(spoken, 999)).toBe("");
+    expect(wordAt(spoken, 11)).toBe("");
   });
 
   test("handles empty input safely", () => {

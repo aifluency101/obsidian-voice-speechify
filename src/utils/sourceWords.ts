@@ -185,3 +185,14 @@ export class SourceMatcher {
     return sourceIndex;
   }
 }
+
+/**
+ * The word beginning at `charIndex` in `text`. Safari reports the offset of a
+ * spoken word but not its length, so the extent is read off the text itself.
+ */
+export function wordAt(text: string, charIndex: number): string {
+  if (charIndex < 0 || charIndex >= text.length) {
+    return "";
+  }
+  return text.slice(charIndex).match(/^[\p{L}\p{N}'’-]+/u)?.[0] ?? "";
+}

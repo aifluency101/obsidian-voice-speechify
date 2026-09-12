@@ -2,6 +2,7 @@ import { StateEffect, StateField } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 import { MarkdownView, type App } from "obsidian";
 import { SourceMatcher, type SourceRange } from "../utils/sourceWords";
+export { wordAt } from "../utils/sourceWords";
 
 /**
  * Follow-along highlighting in the note while it is read.
@@ -84,19 +85,24 @@ export class ReadingHighlighter {
    * at the selection keeps the search aligned either way.
    */
   start(): void {
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (!view) {
+    const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    const cm = markdownView
+      ? (markdownView.editor as { cm?: EditorView }).cm
+      : undefined;
+    if (!markdownView || !cm) {
       this.matcher = undefined;
       return;
     }
-    this.source = view.editor.getValue();
-    this.sourcePath = view.file?.path ?? null;
+    // Read the text out of the CodeMirror document rather than through the
+    // editor wrapper: the decorations are addressed in this document's
+    // coordinates, and anything that normalises the text on the way out (line
+    // endings, for one) would shift every offset after it.
+    this.source = cm.state.doc.toString();
+    this.sourcePath = markdownView.file?.path ?? null;
     this.matcher = new SourceMatcher(this.source);
-    const selection = view.editor.getSelection();
-    if (selection) {
-      this.matcher.rewindTo(
-        view.editor.posToOffset(view.editor.getCursor("from")),
-      );
+    const selection = cm.state.selection.main;
+    if (!selection.empty) {
+      this.matcher.rewindTo(selection.from);
     }
     this.passage = null;
     this.wordMatcher = undefined;
@@ -121,7 +127,9 @@ export class ReadingHighlighter {
     this.wordMatcher = this.passage
       ? new SourceMatcher(this.source.slice(this.passage.from, this.passage.to))
       : undefined;
-    this.render();
+    // Bring the new passage into view — without this the highlight walks off
+    // the bottom of the screen and you lose your place.
+    this.render(null, this.passage?.from);
   }
 
   /** The engine reached `word` inside the current passage. */
@@ -136,7 +144,9 @@ export class ReadingHighlighter {
           to: this.passage.from + found.to,
         }
       : null;
-    this.render(range);
+    // A passage can run to several lines on a phone, so follow the word too —
+    // "nearest" only scrolls when it has actually gone out of view.
+    this.render(range, range?.from, "nearest");
   }
 
   /** Reading stopped — clear everything. */
@@ -158,14 +168,24 @@ export class ReadingHighlighter {
     return !!this.matcher;
   }
 
-  private render(word: SourceRange | null = null): void {
+  private render(
+    word: SourceRange | null = null,
+    scrollTo?: number,
+    align: "center" | "nearest" = "center",
+  ): void {
     const view = this.editorView();
     if (!view) {
       return;
     }
-    view.dispatch({
-      effects: setReadingRanges.of({ passage: this.passage, word }),
-    });
+    const effects: StateEffect<unknown>[] = [
+      setReadingRanges.of({ passage: this.passage, word }),
+    ];
+    if (scrollTo !== undefined && scrollTo <= view.state.doc.length) {
+      // Centre it so there is context both above and below, rather than the
+      // line being read sitting against the bottom edge.
+      effects.push(EditorView.scrollIntoView(scrollTo, { y: align }));
+    }
+    view.dispatch({ effects });
   }
 
   /**
@@ -189,14 +209,6 @@ export class ReadingHighlighter {
     }
     return undefined;
   }
-}
-
-/** The word beginning at `charIndex`; Safari gives the offset but not the length. */
-export function wordAt(text: string, charIndex: number): string {
-  if (charIndex < 0 || charIndex >= text.length) {
-    return "";
-  }
-  return text.slice(charIndex).match(/^[\p{L}\p{N}'’-]+/u)?.[0] ?? "";
 }
 
 function tokenize(text: string): string[] {
