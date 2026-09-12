@@ -1161,3 +1161,59 @@
   color: var(--text-normal);
   border-radius: 2px;
 }
+
+/* Read-aloud control in the note header. While speaking it becomes an animated
+   waveform — an activity indicator, since no provider exposes real amplitude. */
+.voice-header-action .voice-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: var(--icon-size, 18px);
+  width: var(--icon-size, 18px);
+}
+
+.voice-header-action .voice-wave-bar {
+  display: block;
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background-color: currentColor;
+  transform-origin: center;
+  animation: voice-wave-pulse 1s ease-in-out infinite;
+}
+
+.voice-header-action .voice-wave-bar:nth-child(1) {
+  animation-delay: 0s;
+}
+.voice-header-action .voice-wave-bar:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.voice-header-action .voice-wave-bar:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.voice-header-action .voice-wave-bar:nth-child(4) {
+  animation-delay: 0.45s;
+}
+.voice-header-action .voice-wave-bar:nth-child(5) {
+  animation-delay: 0.6s;
+}
+
+@keyframes voice-wave-pulse {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Respect the system setting; a constantly moving icon is exactly what this
+   preference exists to stop. */
+@media (prefers-reduced-motion: reduce) {
+  .voice-header-action .voice-wave-bar {
+    animation: none;
+    transform: scaleY(0.6);
+  }
+}

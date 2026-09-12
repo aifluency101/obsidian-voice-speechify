@@ -81,6 +81,8 @@ On mobile, the same player opens as a full-screen pane, optimized for touch:
 
 ### Listen Instantly
 
+- A **read-aloud button sits in the note's own header**, next to the reading-view and more-options icons — the quickest way to start listening on mobile, where the ribbon is tucked behind a menu. Tap to read, tap again to pause, tap while it is preparing to cancel. While speaking it becomes a small animated waveform so you can see at a glance that a note is playing.
+
 - Two **ribbon icons on the left** get you going: **Voice read text** (▶️) starts reading the active note, and **Open Voice player** (the audio-waveform icon) opens the player.
 
   ![ribbon icons](./assets/ribbon-icon.png)

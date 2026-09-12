@@ -8,6 +8,7 @@ import {
   readingHighlightField,
   wordAt,
 } from "../ui/ReadingHighlight";
+import { ViewHeaderAction } from "../ui/ViewHeaderAction";
 import { Plugin, Platform, Notice } from "obsidian";
 import { MarkdownHelper } from "./MarkdownHelper";
 import { IconEventHandler } from "./IconEventHandler";
@@ -24,6 +25,7 @@ export class Voice extends Plugin {
   public iconEventHandler: IconEventHandler;
   private textSpeaker: TextSpeaker;
   private readingHighlighter: ReadingHighlighter;
+  private viewHeaderAction: ViewHeaderAction;
   /** last passage reported by the provider, for follow-along highlighting */
   private lastSpokenIndex = -1;
   private lastSpokenPassage = "";
@@ -35,6 +37,7 @@ export class Voice extends Plugin {
 
     this.readingHighlighter = new ReadingHighlighter(this.app);
     this.registerEditorExtension(readingHighlightField);
+    this.viewHeaderAction = new ViewHeaderAction(this);
 
     this.speechProvider = createSpeechProvider(this.settings);
     this.watchProvider();
@@ -55,6 +58,9 @@ export class Voice extends Plugin {
 
     this.hotkeySettings = new HotkeySettings(this);
     this.hotkeySettings.initHotkeys();
+
+    // Read-aloud control in the note header, alongside the reading-view icon.
+    this.viewHeaderAction.register();
 
     // Register the collapsible player (right sidebar on desktop, full-screen
     // pane on mobile) and the entry points that open it.

@@ -121,6 +121,11 @@ orchestrators pick the path by `inputFormat`:
   custom folder"), code/acronym/skip-URL/embed toggles, repeat modes, and a **chapter
   list** built from the MP3s in a folder (each chapter has a **⋮** action bar:
   move / rename / delete).
+- `ViewHeaderAction.ts` — the read-aloud button in each markdown view's header
+  (`view.addAction`). Buttons are added per open view on layout/leaf changes and
+  their state is **polled**, because the on-device provider's `<audio>` element
+  is synthetic and fires no play/pause events. The "speaking" state swaps the
+  icon for CSS-animated bars — an activity indicator, not an amplitude meter.
 - `ReadingHighlight.ts` — follow-along highlighting. A CodeMirror `StateField`
   marks the passage being spoken and the word inside it; `ReadingHighlighter`
   resolves those positions, dispatches into whichever editor shows the note, and
