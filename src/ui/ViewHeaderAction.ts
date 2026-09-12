@@ -66,7 +66,9 @@ export class ViewHeaderAction {
       if (view.containerEl.querySelector(".voice-header-action")) {
         continue;
       }
-      const button = view.addAction(ICON_ID, "Read aloud", () => this.toggle());
+      const button = view.addAction(ICON_ID, "Read aloud", () =>
+        this.toggle(view),
+      );
       button.addClass("voice-header-action");
       // Paint straight away so the resting state is our own waveform rather
       // than the registered icon, which renders at a different weight.
@@ -86,7 +88,7 @@ export class ViewHeaderAction {
     }
   }
 
-  private toggle(): void {
+  private toggle(view: MarkdownView): void {
     const provider = this.host.getSpeechProvider();
 
     // A tap while synthesis is running cancels it, matching the player.
@@ -103,6 +105,14 @@ export class ViewHeaderAction {
       void provider.playAudio();
       return;
     }
+
+    // Starting fresh: make this note the active one first. Tapping a header
+    // button does not necessarily activate its leaf, and both the text that
+    // gets read and the editor that gets highlighted are resolved from the
+    // active view — so without this, pressing play on a note you have just
+    // opened can read, and highlight, the note you were on before.
+    // focus:false deliberately: focusing the editor pops the keyboard on mobile.
+    this.host.app.workspace.setActiveLeaf(view.leaf, { focus: false });
     void this.host.speakText();
   }
 

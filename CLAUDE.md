@@ -124,7 +124,10 @@ orchestrators pick the path by `inputFormat`:
 - `ViewHeaderAction.ts` — the read-aloud button in each markdown view's header
   (`view.addAction`). Buttons are added per open view on layout/leaf changes and
   their state is **polled**, because the on-device provider's `<audio>` element
-  is synthetic and fires no play/pause events. The "speaking" state swaps the
+  is synthetic and fires no play/pause events. Starting a read activates the
+  pressed button's own leaf first (`focus: false`, so mobile keeps the keyboard
+  down): a header tap does not necessarily activate its leaf, and both the text
+  read and the editor highlighted resolve from the _active_ view. The "speaking" state swaps the
   icon for CSS-animated bars — an activity indicator, not an amplitude meter.
 - `ReadingHighlight.ts` — follow-along highlighting. A CodeMirror `StateField`
   marks the passage being spoken and the word inside it; `ReadingHighlighter`
