@@ -237,8 +237,10 @@ export class Voice extends Plugin {
         position.index !== this.lastSpokenIndex ||
         position.passage !== this.lastSpokenPassage;
       if (isNewPassage) {
-        if (position.index === 0) {
-          // a fresh pass over the note — re-read it and start the cursor over
+        if (position.index === 0 || !this.readingHighlighter.isActive) {
+          // A fresh pass over the note, or a retry: if the note was not yet on
+          // screen when reading began, one failed start used to leave the rest
+          // of the note with no highlight at all.
           this.readingHighlighter.start();
         } else if (position.index < this.lastSpokenIndex) {
           // seeking backwards; the content cursor only moves forwards

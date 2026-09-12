@@ -1,6 +1,6 @@
 import { StateEffect, StateField } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
-import { MarkdownView, type App } from "obsidian";
+import { MarkdownView, Notice, type App } from "obsidian";
 import {
   SourceMatcher,
   tokenizeSpoken,
@@ -79,6 +79,8 @@ export class ReadingHighlighter {
   private passage: SourceRange | null = null;
   private wordMatcher?: SourceMatcher;
   private currentPassageText = "";
+  /** so the "needs an editor" notice is shown once, not on every passage */
+  private warnedNoEditor = false;
 
   constructor(private app: App) {}
 
@@ -99,8 +101,18 @@ export class ReadingHighlighter {
       : undefined;
     if (!markdownView || !cm) {
       this.matcher = undefined;
+      // Reading view renders HTML rather than a CodeMirror document, so there
+      // is nothing to decorate. Say so once instead of failing silently.
+      if (!this.warnedNoEditor) {
+        this.warnedNoEditor = true;
+        new Notice(
+          "Voice: follow-along highlighting needs Editing view (Live Preview or Source).",
+          6000,
+        );
+      }
       return;
     }
+    this.warnedNoEditor = false;
     // Read the text out of the CodeMirror document rather than through the
     // editor wrapper: the decorations are addressed in this document's
     // coordinates, and anything that normalises the text on the way out (line

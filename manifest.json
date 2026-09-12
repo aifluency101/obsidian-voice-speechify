@@ -1,7 +1,7 @@
 {
   "id": "voice-speechify",
   "name": "Voice Speechify",
-  "version": "1.18.3-speechify.7",
+  "version": "1.18.3-speechify.8",
   "minAppVersion": "1.7.2",
   "description": "Listen to your notes as natural speech with text-to-speech (TTS). Read notes aloud, play them like an audiobook in the voice player, download MP3 audio and listen offline hands-free on mobile. Fork of Voice adding Speechify as a TTS provider.",
   "author": "Chris Oguntolu",
