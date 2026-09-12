@@ -153,7 +153,10 @@ orchestrators pick the path by `inputFormat`:
   first, then favorites). Fully unit-tested.
 - `chapters.ts` — **pure** helpers for the player's folder/chapter lists.
 - `sourceWords.ts` — **pure** helpers that re-align spoken text with the note's
-  markdown. Offsets cannot be carried through the pipeline (markup is stripped,
+  markdown. Both sides **must** tokenize identically (`WORD_PATTERN`): treating a
+  slash or en-dash as a separator on one side only turns "Innovation/Carolyn"
+  into one token against the source's two, and the passage silently fails to
+  match — which looks like the highlight randomly disappearing. Offsets cannot be carried through the pipeline (markup is stripped,
   acronyms expanded, URLs/code skipped), so both sides are reduced to word
   streams and matched with a forward cursor and bounded look-ahead. Unit-tested.
 - `pressGesture.ts` — reusable tap-vs-hold pointer gesture with a fill-ring

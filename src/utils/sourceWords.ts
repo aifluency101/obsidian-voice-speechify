@@ -32,6 +32,15 @@ export interface SourceRange {
 /** How far ahead of the cursor a match may be found before it is rejected. */
 const DEFAULT_LOOKAHEAD = 60;
 
+/**
+ * A word: letters/digits, optionally carrying internal apostrophes or hyphens.
+ * Everything else — slashes, dashes, commas, arrows — is a separator. Both sides
+ * of the alignment must agree on this, or text like "Innovation/Carolyn",
+ * "10–20" and "10,000" tokenizes as one word on one side and two on the other,
+ * and the passage silently fails to match.
+ */
+const WORD_PATTERN = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+
 /** Reduce a word to its comparable form; returns "" for pure punctuation. */
 export function normalizeWord(word: string): string {
   return word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -40,7 +49,7 @@ export function normalizeWord(word: string): string {
 /** Split text into comparable words, recording where each sits in `text`. */
 export function tokenizeSource(text: string): SourceWord[] {
   const words: SourceWord[] = [];
-  const pattern = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+  const pattern = new RegExp(WORD_PATTERN);
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(text)) !== null) {
     const normalized = normalizeWord(match[0]);
@@ -55,10 +64,12 @@ export function tokenizeSource(text: string): SourceWord[] {
   return words;
 }
 
-/** Split spoken text into comparable words, dropping anything unpronounceable. */
+/**
+ * Split spoken text into comparable words, using the same rules as the source so
+ * the two streams line up.
+ */
 export function tokenizeSpoken(text: string): string[] {
-  return text
-    .split(/\s+/)
+  return (text.match(WORD_PATTERN) ?? [])
     .map(normalizeWord)
     .filter((word) => word.length > 0);
 }
@@ -114,10 +125,30 @@ export class SourceMatcher {
     }
     // Then the rest of the note, then from the top — a seek can land anywhere,
     // and a passage found out of order beats no highlight at all.
-    return (
+    const anywhere =
       this.scan(this.cursor, this.words.length, needle) ??
-      this.scan(0, this.cursor, needle)
-    );
+      this.scan(0, this.cursor, needle);
+    if (anywhere) {
+      return anywhere;
+    }
+
+    // The opening word has to match exactly for a run to be considered, so a
+    // passage that begins with something the note words differently — a spelled
+    // out acronym, a number read as words — would never match at all. Retry
+    // without the first word or two rather than dropping the highlight.
+    for (let skip = 1; skip <= 2 && skip < needle.length; skip++) {
+      const trimmed = needle.slice(skip);
+      const found =
+        this.scan(
+          this.cursor,
+          Math.min(this.words.length, this.cursor + this.lookahead),
+          trimmed,
+        ) ?? this.scan(this.cursor, this.words.length, trimmed);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
   }
 
   private scan(

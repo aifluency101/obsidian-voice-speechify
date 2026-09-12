@@ -1,7 +1,11 @@
 import { StateEffect, StateField } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 import { MarkdownView, type App } from "obsidian";
-import { SourceMatcher, type SourceRange } from "../utils/sourceWords";
+import {
+  SourceMatcher,
+  tokenizeSpoken,
+  type SourceRange,
+} from "../utils/sourceWords";
 export { wordAt } from "../utils/sourceWords";
 
 /**
@@ -85,7 +89,11 @@ export class ReadingHighlighter {
    * at the selection keeps the search aligned either way.
    */
   start(): void {
-    const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    // Not getActiveViewOfType: by the time reading begins the focus may have
+    // moved to the player pane, and the note is then no longer the active view.
+    const markdownView =
+      this.app.workspace.getActiveViewOfType(MarkdownView) ??
+      this.markdownViewForFile(this.app.workspace.getActiveFile()?.path);
     const cm = markdownView
       ? (markdownView.editor as { cm?: EditorView }).cm
       : undefined;
@@ -107,6 +115,9 @@ export class ReadingHighlighter {
     this.passage = null;
     this.wordMatcher = undefined;
     this.currentPassageText = "";
+    // Lets the stylesheet add room below the note while reading, so the last
+    // lines can still be scrolled clear of the mobile toolbar.
+    activeDocument.body.addClass("voice-is-reading");
     this.render();
   }
 
@@ -123,7 +134,7 @@ export class ReadingHighlighter {
       return;
     }
     this.currentPassageText = spokenPassage;
-    this.passage = this.matcher.find(tokenize(spokenPassage));
+    this.passage = this.matcher.find(tokenizeSpoken(spokenPassage));
     this.wordMatcher = this.passage
       ? new SourceMatcher(this.source.slice(this.passage.from, this.passage.to))
       : undefined;
@@ -137,7 +148,7 @@ export class ReadingHighlighter {
     if (!this.passage || !this.wordMatcher) {
       return;
     }
-    const found = this.wordMatcher.find(tokenize(word));
+    const found = this.wordMatcher.find(tokenizeSpoken(word));
     const range = found
       ? {
           from: this.passage.from + found.from,
@@ -154,6 +165,7 @@ export class ReadingHighlighter {
     this.passage = null;
     this.wordMatcher = undefined;
     this.currentPassageText = "";
+    activeDocument.body.removeClass("voice-is-reading");
     this.render();
   }
 
@@ -189,31 +201,29 @@ export class ReadingHighlighter {
   }
 
   /**
-   * The CodeMirror view showing the note being read. Prefers the note by path so
-   * the highlight does not jump into a different note the user has switched to.
+   * The CodeMirror view showing the note being read. Matched by path so the
+   * highlight cannot leak into a different note the user has switched to, and
+   * so it survives the player pane taking focus.
    */
   private editorView(): EditorView | undefined {
-    const leaves = this.app.workspace.getLeavesOfType("markdown");
-    for (const leaf of leaves) {
+    const view = this.markdownViewForFile(this.sourcePath);
+    return view ? (view.editor as { cm?: EditorView }).cm : undefined;
+  }
+
+  /** The open markdown view showing `path`, whether or not it has focus. */
+  private markdownViewForFile(
+    path: string | undefined | null,
+  ): MarkdownView | undefined {
+    for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {
       const view = leaf.view;
       if (!(view instanceof MarkdownView)) {
         continue;
       }
-      if (this.sourcePath && view.file?.path !== this.sourcePath) {
+      if (path && view.file?.path !== path) {
         continue;
       }
-      const cm = (view.editor as { cm?: EditorView }).cm;
-      if (cm) {
-        return cm;
-      }
+      return view;
     }
     return undefined;
   }
-}
-
-function tokenize(text: string): string[] {
-  return text
-    .split(/\s+/)
-    .map((word) => word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""))
-    .filter((word) => word.length > 0);
 }

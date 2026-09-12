@@ -1168,15 +1168,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1.5px;
   height: var(--icon-size, 18px);
   width: var(--icon-size, 18px);
 }
 
 .voice-header-action .voice-wave-bar {
   display: block;
-  width: 2px;
-  height: 100%;
+  width: 1.5px;
+  /* Sit well inside the icon box — at full height the bars read as a much
+     heavier glyph than the icons either side of it. */
+  height: 60%;
   border-radius: 1px;
   background-color: currentColor;
   transform-origin: center;
@@ -1216,4 +1218,11 @@
     animation: none;
     transform: scaleY(0.6);
   }
+}
+
+/* Obsidian's mobile toolbar sits over the bottom of the note, so the last lines
+   can never be scrolled into comfortable view while following along. Add room
+   below the text for the duration of a reading pass only. */
+body.voice-is-reading.is-mobile .markdown-source-view.mod-cm6 .cm-content {
+  padding-bottom: 50vh;
 }

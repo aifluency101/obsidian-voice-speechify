@@ -87,6 +87,45 @@ describe("Unit Tests - Source word alignment", () => {
     expect(wordAt(spoken, 11)).toBe("");
   });
 
+  test("splits on slashes, dashes and separators the same way on both sides", () => {
+    // Regression: the spoken side used to split on whitespace only, so
+    // "Innovation/Carolyn" became one token against the source's two and the
+    // passage silently failed to match.
+    const source =
+      "one of three sub-teams: Innovation/Carolyn, Agentic Business Process/Thomas";
+    expect(tokenizeSpoken("Innovation/Carolyn")).toEqual([
+      "innovation",
+      "carolyn",
+    ]);
+    expect(tokenizeSpoken("10–20 agents")).toEqual(["10", "20", "agents"]);
+    expect(tokenizeSpoken("10,000 customers")).toEqual([
+      "10",
+      "000",
+      "customers",
+    ]);
+    // a hyphenated word stays one token; the hyphen is normalized away, which
+    // is fine because the source side normalizes identically
+    expect(tokenizeSpoken("sub-teams")).toEqual(["subteams"]);
+    expect(tokenizeSource("sub-teams")[0].text).toBe("subteams");
+
+    const matcher = new SourceMatcher(source);
+    const range = matcher.find(tokenizeSpoken("Innovation/Carolyn"));
+    expect(range).not.toBeNull();
+    expect(source.slice(range!.from, range!.to)).toBe("Innovation/Carolyn");
+  });
+
+  test("matches a passage whose opening word the note words differently", () => {
+    const source =
+      "## Factory delivery expectations\n\nScale target: 10-20 agents";
+    const matcher = new SourceMatcher(source);
+    // the engine announced a heading level the note does not contain
+    const range = matcher.find(
+      tokenizeSpoken("Heading Scale target: 10-20 agents"),
+    );
+    expect(range).not.toBeNull();
+    expect(source.slice(range!.from, range!.to)).toContain("Scale target");
+  });
+
   test("handles empty input safely", () => {
     const matcher = new SourceMatcher("");
     expect(matcher.find(tokenizeSpoken("anything"))).toBeNull();
