@@ -70,8 +70,12 @@ All providers implement one interface so the rest of the plugin is
 - `SystemVoiceService` is the one provider that does **not** synthesize audio data.
   It drives `speechSynthesis` directly, overriding the playback members instead of
   calling `playBlob`, and returns `null` from `getLastGeneratedAudio()` so the save
-  and chapter UI disables itself. Skip controls move by a chunk of text, since
-  there is no timeline to seek.
+  and chapter UI disables itself. Having no media element, it redefines
+  `duration`/`currentTime`/`ended` on the inherited `<audio>` so the player's
+  scrubber has an estimated timeline (~16 chars/sec) and assigning `currentTime`
+  seeks to the covering chunk; skip controls move by a chunk for the same reason.
+  It also implements the optional `onVoicesChanged()` hook, since the OS
+  publishes its voice list after launch.
 - `SpeechProviderFactory.ts` — `createSpeechProvider(settings)` builds the
   provider chosen in settings and applies rewind/forward prefs.
 - `textChunker.ts` — splits long text for the text-input providers.
