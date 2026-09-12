@@ -7,7 +7,8 @@ export type TtsProvider =
   | "google"
   | "azure"
   | "openai"
-  | "minimax";
+  | "minimax"
+  | "speechify";
 
 /**
  * Where saved MP3s are written.
@@ -61,6 +62,17 @@ export interface VoiceSettings {
   MINIMAX_VOICE: string;
   MINIMAX_MODEL: string;
   MINIMAX_HOST: string;
+
+  // Speechify Text-to-Speech (streaming API). The model decides which voices
+  // are usable, so the cached catalog below is fetched per model.
+  SPEECHIFY_API_KEY: string;
+  SPEECHIFY_VOICE: string;
+  SPEECHIFY_MODEL: string;
+  // Speechify: the account's voice catalog fetched from /v1/voices on "Test
+  // Credentials", filtered to the selected model and cached so the picker can
+  // offer every voice (including cloned ones) grouped by language. Cleared
+  // when the model changes; the hardcoded fallback below is used until then.
+  speechifyVoiceCatalog?: VoiceOption[];
 
   // Content / speech options (shared across providers)
   spellOutAcronyms: boolean;
@@ -415,6 +427,50 @@ export const MINIMAX_VOICES: VoiceOption[] = [
   },
 ];
 
+/**
+ * Speechify streaming models. Simba 3.2 is English-only with the lowest time to
+ * first audio; Simba 3.0 is multilingual. Each has its own set of voices, so
+ * changing the model also changes the voice picker.
+ */
+export const SPEECHIFY_MODELS: ModelOption[] = [
+  { id: "simba-3.2", label: "Simba 3.2 (English, fastest)" },
+  { id: "simba-3.0", label: "Simba 3.0 (multilingual)" },
+];
+
+/**
+ * Curated Speechify voices per model, used until "Test Credentials" fetches the
+ * account's real catalog. Voice ids are model-specific — the `_32` ids only work
+ * with Simba 3.2 — so the fallback is keyed by model id.
+ */
+export const SPEECHIFY_VOICES_BY_MODEL: Record<string, VoiceOption[]> = {
+  "simba-3.2": [
+    { id: "beatrice_32", label: "Beatrice", lang: "en-US" },
+    { id: "dominic_32", label: "Dominic", lang: "en-US" },
+    { id: "edmund_32", label: "Edmund", lang: "en-US" },
+    { id: "geffen_32", label: "Geffen", lang: "en-US" },
+    { id: "harper_32", label: "Harper", lang: "en-US" },
+    { id: "hugh_32", label: "Hugh", lang: "en-US" },
+    { id: "imogen_32", label: "Imogen", lang: "en-US" },
+    { id: "wyatt_32", label: "Wyatt", lang: "en-US" },
+  ],
+  "simba-3.0": [
+    { id: "george", label: "George", lang: "en-GB" },
+    { id: "henry", label: "Henry", lang: "en-US" },
+    { id: "carly", label: "Carly", lang: "en-US" },
+    { id: "sabrina", label: "Sabrina", lang: "en-US" },
+  ],
+};
+
+/**
+ * The built-in voices for a Speechify model, falling back to the Simba 3.2 list
+ * for any model id we don't ship a curated list for.
+ */
+export function speechifyFallbackVoices(model: string): VoiceOption[] {
+  return (
+    SPEECHIFY_VOICES_BY_MODEL[model] ?? SPEECHIFY_VOICES_BY_MODEL["simba-3.2"]
+  );
+}
+
 export const DEFAULT_SETTINGS: VoiceSettings = {
   TTS_PROVIDER: "polly",
 
@@ -444,6 +500,10 @@ export const DEFAULT_SETTINGS: VoiceSettings = {
   MINIMAX_VOICE: "Wise_Woman",
   MINIMAX_MODEL: "speech-02-hd",
   MINIMAX_HOST: "api.minimax.io",
+
+  SPEECHIFY_API_KEY: "",
+  SPEECHIFY_VOICE: "geffen_32",
+  SPEECHIFY_MODEL: "simba-3.2",
 
   spellOutAcronyms: false,
   readCodeBlocks: false,

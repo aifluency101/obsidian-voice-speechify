@@ -10,6 +10,7 @@ import { GoogleTtsService } from "./GoogleTtsService";
 import { AzureSpeechService } from "./AzureSpeechService";
 import { OpenAiSpeechService } from "./OpenAiSpeechService";
 import { MiniMaxSpeechService } from "./MiniMaxSpeechService";
+import { SpeechifySpeechService } from "./SpeechifySpeechService";
 
 /**
  * Create the speech provider selected in settings.
@@ -44,6 +45,14 @@ export function createSpeechProvider(settings: VoiceSettings): SpeechProvider {
       settings.OPENAI_VOICE,
       settings.OPENAI_MODEL,
       Number(settings.SPEED),
+    );
+  } else if (settings.TTS_PROVIDER === "speechify") {
+    provider = new SpeechifySpeechService(
+      settings.SPEECHIFY_API_KEY,
+      settings.SPEECHIFY_VOICE,
+      settings.SPEECHIFY_MODEL,
+      Number(settings.SPEED),
+      settings.speechifyVoiceCatalog,
     );
   } else if (settings.TTS_PROVIDER === "minimax") {
     provider = new MiniMaxSpeechService(

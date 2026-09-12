@@ -57,6 +57,66 @@ export function mapAzureVoices(raw: unknown): VoiceOption[] {
 }
 
 /**
+ * The subset of fields Speechify's `GET /v1/voices` returns that we use.
+ */
+export interface SpeechifyRawVoice {
+  id?: string;
+  display_name?: string;
+  gender?: string;
+  locale?: string;
+  /** "personal" for voices cloned in the account, "shared" for the library */
+  type?: string;
+  models?: { name?: string }[];
+}
+
+/**
+ * Map Speechify's raw voice list into the plugin's VoiceOption catalog, labelled
+ * "<name> (<gender>)" — cloned voices are marked so they stand out — and grouped
+ * by the voice's locale.
+ *
+ * Voice ids are model-specific, so pass the selected model to drop any voice the
+ * model can't speak. The endpoint can filter server-side too; this keeps the
+ * mapping correct either way.
+ *
+ * @param raw The parsed `voices` array from `/v1/voices` (unknown-typed on input).
+ * @param model Optional model id to filter by (e.g. "simba-3.2").
+ */
+export function mapSpeechifyVoices(
+  raw: unknown,
+  model?: string,
+): VoiceOption[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const voices: VoiceOption[] = [];
+  for (const entry of raw as SpeechifyRawVoice[]) {
+    const id = entry?.id;
+    if (!id || seen.has(id)) {
+      continue;
+    }
+    const models = (entry.models ?? [])
+      .map((m) => m?.name)
+      .filter((name): name is string => !!name);
+    if (model && models.length > 0 && !models.includes(model)) {
+      continue;
+    }
+    seen.add(id);
+    const name = entry.display_name || id;
+    const details = [
+      entry.gender && entry.gender !== "not_specified" ? entry.gender : null,
+      entry.type === "personal" ? "cloned" : null,
+    ].filter((detail): detail is string => !!detail);
+    voices.push({
+      id,
+      label: details.length ? `${name} (${details.join(", ")})` : name,
+      lang: entry.locale || "en-US",
+    });
+  }
+  return voices;
+}
+
+/**
  * Friendly English name for a BCP-47 locale (e.g. "de-DE" → "German (Germany)"),
  * used to group/sort voices that don't carry an explicit `group`. Falls back to
  * the raw code if Intl.DisplayNames is unavailable or can't resolve it.

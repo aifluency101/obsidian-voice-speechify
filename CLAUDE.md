@@ -9,8 +9,8 @@ workflow all live here. Keep it up to date as the codebase evolves.
 ## 1. What this is
 
 **Obsidian Voice** — a text-to-speech plugin for Obsidian that reads notes
-aloud with an audiobook-style player. It supports **five providers** (AWS Polly,
-ElevenLabs, OpenAI, Google Cloud, Azure Speech) and runs on **desktop and
+aloud with an audiobook-style player. It supports **seven providers** (AWS Polly,
+ElevenLabs, OpenAI, Google Cloud, Azure Speech, MiniMax, Speechify) and runs on **desktop and
 mobile** (iOS / Android). Users bring their own provider credentials; nothing is
 proxied through a third party.
 
@@ -64,7 +64,8 @@ All providers implement one interface so the rest of the plugin is
   implement what actually differs: `speak()`, `validateCredentials()`,
   `updateCredentials()`, `getVoiceOptions()`, and `inputFormat`.
 - Concrete services: `AwsPollyService`, `AzureSpeechService`, `GoogleTtsService`,
-  `ElevenLabsService`, `OpenAiSpeechService`.
+  `ElevenLabsService`, `OpenAiSpeechService`, `MiniMaxSpeechService`,
+  `SpeechifySpeechService`.
 - `SpeechProviderFactory.ts` — `createSpeechProvider(settings)` builds the
   provider chosen in settings and applies rewind/forward prefs.
 - `textChunker.ts` — splits long text for the text-input providers.
@@ -72,13 +73,15 @@ All providers implement one interface so the rest of the plugin is
   voice list into `VoiceOption[]` and group it by language for the picker.
   Azure uses it: "Test Credentials" fetches `/voices/list`, the result is cached
   in `settings.azureVoiceCatalog`, and `getVoiceOptions()` returns it (the
-  hardcoded `AZURE_VOICES` is the fallback). The player renders the catalog as
+  hardcoded `AZURE_VOICES` is the fallback). Speechify works the same way via
+  `/v1/voices`, cached in `settings.speechifyVoiceCatalog`; because its voice ids
+  are model-specific the cache is cleared whenever the model changes. The player renders the catalog as
   `<optgroup>`s grouped by language.
 
 `inputFormat` selects which content pipeline feeds the provider:
 
 - **`"ssml"`** → AWS Polly, Azure Speech, Google Cloud.
-- **`"text"`** → ElevenLabs, OpenAI.
+- **`"text"`** → ElevenLabs, OpenAI, MiniMax, Speechify.
 
 ### Content pipeline (`src/processors/`)
 
@@ -163,7 +166,7 @@ tests/                          # Jest unit + integration tests, mocks, helpers
 
 - **Stay provider-agnostic.** New shared behaviour goes in `BaseSpeechService`
   or the orchestration layer — never special-case one engine in the UI. Any
-  change should be considered against **all five providers** and **both
+  change should be considered against **all seven providers** and **both
   platforms** (desktop + mobile).
 - **Pure logic in small helpers, Obsidian glue thin.** Put testable logic in
   helpers like `utils/audioFolders.ts` / `utils/chapters.ts` and unit-test it;

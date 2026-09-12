@@ -11,9 +11,11 @@ import {
   OPENAI_MODELS,
   MINIMAX_MODELS,
   MINIMAX_REGIONS,
+  SPEECHIFY_MODELS,
   MIN_SKIP_SECONDS,
   MAX_SKIP_SECONDS,
   type TtsProvider,
+  type VoiceOption,
 } from "./VoiceSettings";
 import { createSpeechProvider } from "../service/SpeechProviderFactory";
 
@@ -104,6 +106,7 @@ export class VoiceSettingTab extends PluginSettingTab {
             azure: "Azure Speech",
             openai: "OpenAI",
             minimax: "MiniMax",
+            speechify: "Speechify",
           },
         },
       },
@@ -275,6 +278,8 @@ export class VoiceSettingTab extends PluginSettingTab {
       this.displayOpenAISettings(containerEl);
     } else if (this.plugin.settings.TTS_PROVIDER === "minimax") {
       this.displayMiniMaxSettings(containerEl);
+    } else if (this.plugin.settings.TTS_PROVIDER === "speechify") {
+      this.displaySpeechifySettings(containerEl);
     } else {
       this.displayPollySettings(containerEl);
     }
@@ -298,6 +303,7 @@ export class VoiceSettingTab extends PluginSettingTab {
           .addOption("azure", "Azure Speech")
           .addOption("openai", "OpenAI")
           .addOption("minimax", "MiniMax")
+          .addOption("speechify", "Speechify")
           .setValue(this.plugin.settings.TTS_PROVIDER)
           .onChange(async (value) => {
             this.plugin.settings.TTS_PROVIDER = value as TtsProvider;
@@ -407,6 +413,55 @@ export class VoiceSettingTab extends PluginSettingTab {
 
     // Provider-specific credentials
     this.renderActiveProviderSettings(containerEl);
+  }
+
+  private displaySpeechifySettings(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName("Speechify").setHeading();
+
+    new Setting(containerEl)
+      .setName("Model")
+      .setDesc(
+        "The Speechify model. Simba 3.2 is English-only and starts playing fastest; Simba 3.0 is multilingual. Each model has its own voices, so switching resets the voice list.",
+      )
+      .addDropdown((dropdown) => {
+        SPEECHIFY_MODELS.forEach((model) => {
+          dropdown.addOption(model.id, model.label);
+        });
+        dropdown
+          .setValue(this.plugin.settings.SPEECHIFY_MODEL)
+          .onChange(async (value) => {
+            this.plugin.settings.SPEECHIFY_MODEL = value;
+            // Voice ids are model-specific, so the cached catalog no longer
+            // applies. "Test Credentials" fetches the new model's voices.
+            this.plugin.settings.speechifyVoiceCatalog = undefined;
+            await this.plugin.saveSettings();
+            this.plugin.reinitializeProviderCredentials();
+            this.plugin.refreshVoicePlayerControls();
+          });
+      });
+
+    this.addPasswordSetting(
+      containerEl,
+      "Speechify API Key",
+      "Your Speechify API key (Speechify platform dashboard \u2192 API keys).",
+      "Enter your Speechify API key",
+      this.plugin.settings.SPEECHIFY_API_KEY,
+      async (value) => {
+        this.plugin.settings.SPEECHIFY_API_KEY = value;
+        await this.plugin.saveSettings();
+        this.plugin.reinitializeProviderCredentials();
+      },
+    );
+
+    this.renderCredentialValidation(containerEl, {
+      providerName: "Speechify",
+      isConfigured: () => !!this.plugin.settings.SPEECHIFY_API_KEY,
+      missingMessage: "Please enter your Speechify API key before testing.",
+      promptMessage:
+        "Enter your Speechify API key above, then click 'Test Credentials' to validate",
+      helpText: "Need a Speechify API key? ",
+      helpUrl: "https://platform.speechify.ai/api-keys",
+    });
   }
 
   private displayMiniMaxSettings(containerEl: HTMLElement): void {
@@ -774,6 +829,23 @@ export class VoiceSettingTab extends PluginSettingTab {
   }
 
   /**
+   * Store a validated voice catalog against the active provider, for the
+   * providers that fetch one. Returns false when the provider has no catalog
+   * setting (its voices are a fixed list), so nothing needs saving.
+   */
+  private cacheProviderVoiceCatalog(voices: VoiceOption[]): boolean {
+    if (this.plugin.settings.TTS_PROVIDER === "azure") {
+      this.plugin.settings.azureVoiceCatalog = voices;
+      return true;
+    }
+    if (this.plugin.settings.TTS_PROVIDER === "speechify") {
+      this.plugin.settings.speechifyVoiceCatalog = voices;
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Render the credential validation panel for the active provider (styling
    * lives in styles.css). Uses the provider factory to build a temporary
    * instance and call validateCredentials.
@@ -892,14 +964,13 @@ export class VoiceSettingTab extends PluginSettingTab {
         const result = await tempProvider.validateCredentials();
 
         if (result.isValid) {
-          // Cache a freshly fetched voice catalog (Azure) so the picker can
-          // offer every voice grouped by language, then resync the player.
+          // Cache a freshly fetched voice catalog so the picker can offer every
+          // voice grouped by language, then resync the player.
           if (
             result.voices &&
             result.voices.length > 0 &&
-            this.plugin.settings.TTS_PROVIDER === "azure"
+            this.cacheProviderVoiceCatalog(result.voices)
           ) {
-            this.plugin.settings.azureVoiceCatalog = result.voices;
             await this.plugin.saveSettings();
             this.plugin.reinitializeProviderCredentials();
             this.plugin.refreshVoicePlayerControls();
