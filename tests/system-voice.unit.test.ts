@@ -6,6 +6,7 @@ import {
 type FakeUtterance = {
   text: string;
   rate: number;
+  onboundary?: (event: { charIndex: number; name: string }) => void;
   lang?: string;
   voice?: SpeechSynthesisVoice;
   onend?: () => void;
@@ -55,6 +56,14 @@ class FakeSynth implements SpeechSynthesisLike {
   private listeners: (() => void)[] = [];
   addEventListener(_type: "voiceschanged", listener: () => void): void {
     this.listeners.push(listener);
+  }
+  emitBoundary(charIndex: number, name = "word"): void {
+    const current = this.spoken[this.spoken.length - 1];
+    (
+      current as unknown as {
+        onboundary?: (event: { charIndex: number; name: string }) => void;
+      }
+    ).onboundary?.({ charIndex, name });
   }
   emitVoicesChanged(): void {
     this.listeners.forEach((listener) => listener());
@@ -233,6 +242,49 @@ describe("Unit Tests - System voice provider", () => {
     expect(service.getVoiceOptions()).toEqual([
       { id: "", label: "System default", lang: "en-US" },
     ]);
+  });
+
+  test("reports the passage being spoken, and the word within it", async () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    const positions: ({
+      passage: string;
+      index: number;
+      charIndex?: number;
+    } | null)[] = [];
+    service.onSpeechPosition((position) => positions.push(position));
+
+    await service.speak(`${"alpha ".repeat(70)}\n\nbeta gamma delta`);
+
+    // the first chunk is announced as soon as it starts
+    expect(positions[0]).toMatchObject({ index: 0, charIndex: undefined });
+    expect(positions[0]?.passage.startsWith("alpha")).toBe(true);
+
+    // a word boundary carries the offset within that passage
+    synth.emitBoundary(6);
+    expect(positions[positions.length - 1]).toMatchObject({
+      index: 0,
+      charIndex: 6,
+    });
+
+    synth.finishCurrent();
+    expect(positions[positions.length - 1]).toMatchObject({ index: 1 });
+
+    // finishing the last chunk clears the highlight
+    synth.finishCurrent();
+    expect(positions[positions.length - 1]).toBeNull();
+  });
+
+  test("clears the reported position when stopped", async () => {
+    const synth = new FakeSynth();
+    const service = makeService(synth);
+    const positions: unknown[] = [];
+    service.onSpeechPosition((position) => positions.push(position));
+    await service.speak("Hello there.");
+
+    service.stopAudio();
+
+    expect(positions[positions.length - 1]).toBeNull();
   });
 
   test("notifies when the engine publishes its voices later", () => {

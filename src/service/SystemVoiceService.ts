@@ -1,6 +1,9 @@
 import type { VoiceOption, VoiceSettings } from "../settings/VoiceSettings";
 import { BaseSpeechService } from "./BaseSpeechService";
-import type { CredentialValidationResult } from "./SpeechProvider";
+import type {
+  CredentialValidationResult,
+  SpeechPosition,
+} from "./SpeechProvider";
 import { chunkPlainText } from "./textChunker";
 
 /**
@@ -59,6 +62,7 @@ export class SystemVoiceService extends BaseSpeechService {
   private pausedSince?: number;
   private pausedTotalMs = 0;
   private voicesChangedCallback?: () => void;
+  private positionCallback?: (position: SpeechPosition | null) => void;
 
   constructor(
     voice: string,
@@ -81,6 +85,19 @@ export class SystemVoiceService extends BaseSpeechService {
   /** Lets the plugin refresh the voice picker once the engine publishes its list. */
   onVoicesChanged(callback: () => void): void {
     this.voicesChangedCallback = callback;
+  }
+
+  /** Reports the passage — and, via boundary events, the word — being spoken. */
+  onSpeechPosition(callback: (position: SpeechPosition | null) => void): void {
+    this.positionCallback = callback;
+  }
+
+  private reportPosition(charIndex?: number): void {
+    const passage = this.queue[this.index];
+    if (passage === undefined) {
+      return;
+    }
+    this.positionCallback?.({ passage, index: this.index, charIndex });
   }
 
   getVoiceOptions(): VoiceOption[] {
@@ -163,10 +180,19 @@ export class SystemVoiceService extends BaseSpeechService {
     utterance.rate = clampRate(this.speed);
 
     this.markChunkStarted();
+    this.reportPosition();
     utterance.onstart = () => {
       if (generation === this.generation) {
         // Engines take a moment to begin; time from the real start.
         this.markChunkStarted();
+        this.reportPosition();
+      }
+    };
+    // Safari reports charIndex but not charLength, so the word's extent is
+    // worked out from the text itself downstream.
+    utterance.onboundary = (event) => {
+      if (generation === this.generation && event.name !== "sentence") {
+        this.reportPosition(event.charIndex);
       }
     };
     utterance.onend = () => {
@@ -175,6 +201,7 @@ export class SystemVoiceService extends BaseSpeechService {
       }
       if (this.index >= this.queue.length - 1) {
         this.ended = true;
+        this.positionCallback?.(null);
         return;
       }
       this.index++;
@@ -237,6 +264,7 @@ export class SystemVoiceService extends BaseSpeechService {
     this.index = 0;
     this.ended = true;
     this.chunkStartedAt = undefined;
+    this.positionCallback?.(null);
   }
 
   isPlaying(): boolean {

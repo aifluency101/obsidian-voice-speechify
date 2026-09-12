@@ -1147,3 +1147,17 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+/* Follow-along highlighting while a note is read aloud. The passage uses a
+   subdued wash so it reads as context, and the current word a stronger accent
+   so the eye can track it. Both inherit theme colours rather than hard-coding. */
+.voice-reading-passage {
+  background-color: var(--text-selection);
+  border-radius: 2px;
+}
+
+.voice-reading-word {
+  background-color: var(--text-highlight-bg);
+  color: var(--text-normal);
+  border-radius: 2px;
+}

@@ -29,6 +29,17 @@ export interface CredentialValidationResult {
   voices?: VoiceOption[];
 }
 
+/**
+ * Where the engine has got to, for follow-along highlighting. `passage` is the
+ * text currently being spoken; `charIndex` is the offset of the current word
+ * within it, when the engine reports word boundaries at all.
+ */
+export interface SpeechPosition {
+  passage: string;
+  index: number;
+  charIndex?: number;
+}
+
 export interface SpeechProvider {
   /**
    * The kind of content this provider expects from the processing pipeline:
@@ -106,6 +117,13 @@ export interface SpeechProvider {
    * refresh the voice picker once it does.
    */
   onVoicesChanged?(callback: () => void): void;
+
+  /**
+   * Optional: providers that can say where in the text they are report it here,
+   * so the note can highlight along. Providers that return finished audio have
+   * no way to know, and simply do not implement it. `null` means "stopped".
+   */
+  onSpeechPosition?(callback: (position: SpeechPosition | null) => void): void;
 
   // Credentials
   validateCredentials(): Promise<CredentialValidationResult>;

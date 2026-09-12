@@ -3,6 +3,11 @@ import { VoiceSettingTab } from "../settings/VoiceSettingTab";
 import { HotkeySettings } from "../settings/HotkeySettings";
 import type { SpeechProvider } from "../service/SpeechProvider";
 import { createSpeechProvider } from "../service/SpeechProviderFactory";
+import {
+  ReadingHighlighter,
+  readingHighlightField,
+  wordAt,
+} from "../ui/ReadingHighlight";
 import { Plugin, Platform, Notice } from "obsidian";
 import { MarkdownHelper } from "./MarkdownHelper";
 import { IconEventHandler } from "./IconEventHandler";
@@ -18,14 +23,21 @@ export class Voice extends Plugin {
   private hotkeySettings: HotkeySettings;
   public iconEventHandler: IconEventHandler;
   private textSpeaker: TextSpeaker;
+  private readingHighlighter: ReadingHighlighter;
+  /** last passage reported by the provider, for follow-along highlighting */
+  private lastSpokenIndex = -1;
+  private lastSpokenPassage = "";
 
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new VoiceSettingTab(this.app, this));
     this.markdownHelper = new MarkdownHelper(this.app);
 
+    this.readingHighlighter = new ReadingHighlighter(this.app);
+    this.registerEditorExtension(readingHighlightField);
+
     this.speechProvider = createSpeechProvider(this.settings);
-    this.watchProviderVoices();
+    this.watchProvider();
 
     this.iconEventHandler = new IconEventHandler(
       this,
@@ -190,7 +202,8 @@ export class Voice extends Plugin {
     // Stop any audio on the outgoing provider before swapping
     this.speechProvider.stopAudio();
     this.speechProvider = createSpeechProvider(this.settings);
-    this.watchProviderVoices();
+    this.readingHighlighter.stop();
+    this.watchProvider();
     this.iconEventHandler.setProvider(this.speechProvider);
     this.reinitializeTextSpeaker();
   }
@@ -200,9 +213,41 @@ export class Voice extends Plugin {
    * on-device engine does this: getVoices() is empty until the OS has loaded
    * them, and without the refresh the dropdown stays blank for the session.
    */
-  private watchProviderVoices(): void {
+  private watchProvider(): void {
     this.speechProvider.onVoicesChanged?.(() => {
       this.refreshVoicePlayerControls();
+    });
+    this.lastSpokenIndex = -1;
+    this.lastSpokenPassage = "";
+    this.speechProvider.onSpeechPosition?.((position) => {
+      if (!position) {
+        this.readingHighlighter.stop();
+        this.lastSpokenIndex = -1;
+        this.lastSpokenPassage = "";
+        return;
+      }
+
+      const isNewPassage =
+        position.index !== this.lastSpokenIndex ||
+        position.passage !== this.lastSpokenPassage;
+      if (isNewPassage) {
+        if (position.index === 0) {
+          // a fresh pass over the note — re-read it and start the cursor over
+          this.readingHighlighter.start();
+        } else if (position.index < this.lastSpokenIndex) {
+          // seeking backwards; the content cursor only moves forwards
+          this.readingHighlighter.rewind();
+        }
+        this.lastSpokenIndex = position.index;
+        this.lastSpokenPassage = position.passage;
+        this.readingHighlighter.setPassage(position.passage);
+      }
+
+      if (position.charIndex !== undefined) {
+        this.readingHighlighter.setWord(
+          wordAt(position.passage, position.charIndex),
+        );
+      }
     });
   }
 

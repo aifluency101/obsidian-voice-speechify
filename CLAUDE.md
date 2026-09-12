@@ -121,6 +121,11 @@ orchestrators pick the path by `inputFormat`:
   custom folder"), code/acronym/skip-URL/embed toggles, repeat modes, and a **chapter
   list** built from the MP3s in a folder (each chapter has a **⋮** action bar:
   move / rename / delete).
+- `ReadingHighlight.ts` — follow-along highlighting. A CodeMirror `StateField`
+  marks the passage being spoken and the word inside it; `ReadingHighlighter`
+  resolves those positions and dispatches into whichever editor shows the note.
+  Only providers implementing the optional `onSpeechPosition()` drive it — an
+  engine that returns finished audio cannot say where it is.
 - `FolderPickerModal.ts` — quick folder picker (fuzzy search, a per-folder
   default-folder **pin**, starred favorites, "create folder") used by the
   custom-save-location feature.
@@ -141,6 +146,10 @@ orchestrators pick the path by `inputFormat`:
   next to note), default-folder + favorites toggles, picker ordering (default
   first, then favorites). Fully unit-tested.
 - `chapters.ts` — **pure** helpers for the player's folder/chapter lists.
+- `sourceWords.ts` — **pure** helpers that re-align spoken text with the note's
+  markdown. Offsets cannot be carried through the pipeline (markup is stripped,
+  acronyms expanded, URLs/code skipped), so both sides are reduced to word
+  streams and matched with a forward cursor and bounded look-ahead. Unit-tested.
 - `pressGesture.ts` — reusable tap-vs-hold pointer gesture with a fill-ring
   while holding (e.g. save buttons: tap = save, hold = folder picker; the player
   play button: tap = play/pause/cancel, hold = regenerate). Shared by the
