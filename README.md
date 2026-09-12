@@ -1,5 +1,9 @@
 # Obsidian Voice Plugin 🔊
 
+> **Unofficial fork of [Voice](https://github.com/chrisurf/obsidian-voice) (MIT, by Chris Oguntolu) that adds [Speechify](https://speechify.com/text-to-speech-api/) as a text-to-speech provider.**
+> It ships under the plugin id `voice-speechify`, so it installs alongside the original rather than replacing it. Install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat).
+> Everything below is the upstream README, updated where Speechify is relevant.
+
 ![Obsidian Voice — listen to your notes in natural, lifelike speech with AWS Polly, ElevenLabs, Google Cloud, Azure Speech, OpenAI, or MiniMax](./assets/hero.png)
 
 Turn every note into a mobile-friendly, audiobook-like experience. The Obsidian Voice Plugin reads your notes aloud in natural, lifelike speech — using the text-to-speech provider you already have. It supports all the major engines — **AWS Polly**, **ElevenLabs**, **OpenAI**, **Google Cloud**, **Azure Speech**, **MiniMax**, and **Speechify** — so you can listen with whichever one you prefer. Listen with a dedicated player, jump between notes like chapters, change the speed on the fly, and save audio offline — with your credentials kept private in your own account.
